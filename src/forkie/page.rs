@@ -102,8 +102,22 @@ impl Page {
 
     pub fn add_files(&mut self, file_groups: Vec<Vec<LangFile>>) {
         for file_group in file_groups {
+            let mut splits: Vec<Vec<&str>> = Vec::new();
+
+            for file in file_group.iter() {
+                splits.push(file.1.split("---").collect::<Vec<&str>>())
+            }
 
 
+            for (j, section) in splits[0].iter().enumerate() {
+                let mut snippet = Snippet::new();
+
+                for k in 0 .. file_group.len().clone() {
+                    snippet.add_lang(file_group[k].0.clone(), splits[k][j])
+                }
+
+                self.content.push(snippet)
+            }
         }
     }
 }
