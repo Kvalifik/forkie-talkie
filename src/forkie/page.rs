@@ -1,6 +1,8 @@
 use std::collections::HashMap;
 use std::path::Path;
 
+
+
 #[derive(Debug)]
 pub enum Tag {
     Button,
@@ -108,16 +110,21 @@ impl Page {
                 splits.push(file.1.split("---").collect::<Vec<&str>>())
             }
 
-
-            for (j, section) in splits[0].iter().enumerate() {
+            for (j, split) in splits.iter().enumerate() {
                 let mut snippet = Snippet::new();
 
-                for k in 0 .. file_group.len().clone() {
-                    snippet.add_lang(file_group[k].0.clone(), splits[k][j])
+                for section in split {
+                    snippet.add_lang(file_group[j].0.clone(), section);
                 }
 
                 self.content.push(snippet)
             }
         }
+    }
+
+    pub fn as_i18_json(&self) -> String {
+        let mut result = String::new();
+
+        result
     }
 }
