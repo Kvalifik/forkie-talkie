@@ -32,5 +32,7 @@ fn main() {
 
     page.add_files(vec!(group));
 
+    println!("{:#?}", page.names);
+
     println!("{:#?}", page.content)
 }

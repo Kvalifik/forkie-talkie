@@ -1,6 +1,8 @@
 use std::collections::HashMap;
 use std::path::Path;
 
+use std::fmt;
+
 
 
 #[derive(Debug)]
@@ -16,6 +18,12 @@ pub struct Lang {
     pub code: String,    // e.g. "en" or "da"
     pub content: String, // the text
     pub tag: Tag,
+}
+
+impl fmt::Display for Lang {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        Ok(())
+    }
 }
 
 
@@ -91,6 +99,7 @@ pub type LangFile = (String, String);
 
 pub struct Page {
     pub content: Vec<Snippet>,
+    pub names: Vec<String>,
     pub path: String,
 }
 
@@ -98,6 +107,7 @@ impl Page {
     pub fn new() -> Self {
         Self {
             content: Vec::new(),
+            names: Vec::new(),
             path: String::new(),
         }
     }
@@ -115,6 +125,10 @@ impl Page {
 
                 for section in split {
                     snippet.add_lang(file_group[j].0.clone(), section);
+
+                    if j == 0 {
+                        self.names.push(snippet.dirs.last().unwrap().content.split(" ").collect::<Vec<&str>>()[0].to_owned())
+                    }
                 }
 
                 self.content.push(snippet)
@@ -124,6 +138,8 @@ impl Page {
 
     pub fn as_i18_json(&self) -> String {
         let mut result = String::new();
+
+
 
         result
     }
