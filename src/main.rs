@@ -36,9 +36,8 @@ fn main() {
 
     page.add_files(vec!(group));
 
-    println!("{}", page.as_i18_yaml());
-
     internationalize(&mut html, &page);
+    html.push_str(&format!("\n{}", page.as_i18_yaml()));
 
     println!("{}", html)
 }
