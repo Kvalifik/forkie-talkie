@@ -3,8 +3,6 @@ use std::path::Path;
 
 use std::fmt;
 
-
-
 #[derive(Debug)]
 pub enum Tag {
     Button,
@@ -12,34 +10,44 @@ pub enum Tag {
     None,
 }
 
+impl fmt::Display for Tag {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        match self {
+            &Tag::Button => write!(f, "v_btn"),
+            &Tag::Header(a) => write!(f, "h{}", a),
+            _ => Ok(()),
+        }
+    }
+}
 
 #[derive(Debug)]
 pub struct Lang {
-    pub code: String,    // e.g. "en" or "da"
     pub content: String, // the text
     pub tag: Tag,
 }
 
 impl fmt::Display for Lang {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        Ok(())
+        write!(f, "{}", self.content)
     }
 }
 
 
 #[derive(Debug)]
 pub struct Snippet {
+    pub code: String,
     pub dirs: Vec<Lang>,
 }
 
 impl Snippet {
-    pub fn new() -> Self {
+    pub fn new(code: String) -> Self {
         Self {
             dirs: Vec::new(),
+            code,
         }
     }
 
-    pub fn add_lang(&mut self, code: String, md: &str) {
+    pub fn add_lang(&mut self, md: &str) {
         let mut index = 0;
         let chars = md.chars().collect::<Vec<char>>();
 
@@ -84,7 +92,6 @@ impl Snippet {
 
         self.dirs.push(
             Lang {
-                code: code.to_owned(),
                 content,
                 tag,
             }
@@ -121,10 +128,10 @@ impl Page {
             }
 
             for (j, split) in splits.iter().enumerate() {
-                let mut snippet = Snippet::new();
+                let mut snippet = Snippet::new(file_group[j].0.clone());
 
                 for section in split {
-                    snippet.add_lang(file_group[j].0.clone(), section);
+                    snippet.add_lang(section);
 
                     if j == 0 {
                         self.names.push(snippet.dirs.last().unwrap().content.split(" ").collect::<Vec<&str>>()[0].to_owned())
@@ -136,10 +143,19 @@ impl Page {
         }
     }
 
-    pub fn as_i18_json(&self) -> String {
+    pub fn as_i18_yaml(&self) -> String {
         let mut result = String::new();
 
+        for snippet in self.content.iter() {
+            result.push_str(&format!("<i18n locale=\"{}\" lang=\"yaml\">\n", snippet.code));
 
+            for (i, lang) in snippet.dirs.iter().enumerate() {
+                result.push_str(&format!("\t__{}_{}__{}: \"{}\"", self.names[i].trim(), i, lang.tag, lang.content.trim()));
+                result.push('\n')
+            }
+
+            result.push_str("</i18n>\n\n");
+        }
 
         result
     }
