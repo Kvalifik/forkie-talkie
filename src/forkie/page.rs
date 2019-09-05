@@ -15,7 +15,7 @@ impl fmt::Display for Tag {
         match self {
             &Tag::Button => write!(f, "v_btn"),
             &Tag::Header(a) => write!(f, "h{}", a),
-            _ => Ok(()),
+            _ => write!(f, "p"),
         }
     }
 }
