@@ -9,48 +9,6 @@ use std::path::Path;
 
 use super::page::Page;
 
-pub fn grab_path(path: &str) {
-    let meta = match metadata(path) {
-        Ok(data) => data,
-        Err(why) => panic!("{}", why),
-    };
-
-    if meta.is_file() {
-        let split: Vec<&str> = path.split('.').collect();
-
-        if *split.last().unwrap() == "vue" {
-            // write(path, &internationalize(&file_content(path)))
-        }
-    } else {
-        let paths = fs::read_dir(path).unwrap();
-
-        for folder_path in paths {
-            let folder_path = format!("{}", folder_path.unwrap().path().display());
-            let split: Vec<&str> = folder_path.split('.').collect();
-
-            if Path::new(&folder_path).is_dir() || *split.last().unwrap() == "vue" {
-                grab_path(&folder_path)
-            }
-        }
-    }
-}
-
-pub fn file_content(path: &str) -> String {
-    let display = Path::new(path).display();
-
-    let mut file = match File::open(&path) {
-        Err(why) => panic!("Failed to open {}: {}", display, why),
-        Ok(file) => file,
-    };
-
-    let mut s = String::new();
-
-    match file.read_to_string(&mut s) {
-        Err(why) => panic!("Failed to read {}: {}", display, why),
-        Ok(_)    => s.to_owned(),
-    }
-}
-
 fn peek_range(content: &Vec<char>, index: usize, len: usize) -> String {
     if index + len - 1 >= content.len() {
         return String::new()
