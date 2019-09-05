@@ -1,3 +1,5 @@
+#![feature(async_await)]
+
 #[macro_use]
 extern crate serde_json;
 
@@ -13,6 +15,9 @@ mod forkie;
 use forkie::page::*;
 use forkie::forkie::internationalize;
 
+extern crate crossbeam;
+
+// TODO: don't hardcode language codes
 pub fn grab_language_md(path: &str, name: &str, md_path: &str) {
     let path_a = format!("{}/{}_da.md", md_path, name);
     let path_b = format!("{}/{}_en.md", md_path, name);
@@ -25,12 +30,16 @@ pub fn grab_language_md(path: &str, name: &str, md_path: &str) {
 
     page.add_files(vec!(group));
 
-    let mut html= file_content(path);
+    let mut html = file_content(path);
 
     internationalize(&mut html, &page);
     html.push_str(&format!("\n\n{}", page.as_i18_yaml()));
 
-    println!("{}", html);
+    let mut output_file = File::create(&path).unwrap();
+    match output_file.write_all(html.as_bytes()) {
+        Ok(_)    => (),
+        Err(why) => println!("{}", why)
+    }
 }
 
 pub fn grab_path(path: &str, md_path: &str) {
@@ -43,19 +52,23 @@ pub fn grab_path(path: &str, md_path: &str) {
         let split: Vec<&str> = path.split('.').collect();
 
         if *split.last().unwrap() == "vue" {
-            grab_language_md(path, split[0].split('/').last().unwrap(), md_path)
+            grab_language_md(path, split[0].split('/').last().unwrap(), md_path);
         }
     } else {
         let paths = fs::read_dir(path).unwrap();
 
-        for folder_path in paths {
-            let folder_path = format!("{}", folder_path.unwrap().path().display());
-            let split: Vec<&str> = folder_path.split('.').collect();
+        crossbeam::scope(|spawner| {
+            for folder_path in paths {
+                spawner.spawn(|_| {
+                    let folder_path = format!("{}", folder_path.unwrap().path().display());
+                    let split: Vec<&str> = folder_path.split('.').collect();
 
-            if Path::new(&folder_path).is_dir() || *split.last().unwrap() == "vue" {
-                grab_path(&folder_path, md_path)
+                    if Path::new(&folder_path).is_dir() || *split.last().unwrap() == "vue" {
+                        grab_path(&folder_path, md_path)
+                    }
+                });
             }
-        }
+        }).unwrap();
     }
 }
 
@@ -75,44 +88,8 @@ pub fn file_content(path: &str) -> String {
     }
 }
 
-fn test() {
-    let md_da = r#"
-### jeg hedder walkie talkie
----
-[en knap]
----
-[bobs]
-    "#;
-
-    let md_en = r#"
-### my name is forkie forkie talkie
----
-[a button]
----
-
-[weird]
-    "#;
-
-    let mut html = r#"
-<h3>jeg hedder kkkaj</h3>
-<v-btn>butt 1</v-btn>
-<v-btn>button 2</v-btn>
-
-    "#.to_string();
-
-    let mut page = Page::new();
-    let group = vec![("da".to_string(), md_da.to_owned()), ("en".to_string(), md_en.to_owned())];
-
-    page.add_files(vec!(group));
-
-    internationalize(&mut html, &page);
-    html.push_str(&format!("\n{}", page.as_i18_yaml()));
-
-    println!("{}", html)
-}
-
 const HELP: &'static str = r#"
-Forkie- forkie talkie
+Forkie forkie talkie
 
 USAGE:
     forkie <file/folder> <folder>

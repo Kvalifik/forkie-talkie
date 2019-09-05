@@ -8,3 +8,4 @@ edition = "2018"
 
 [dependencies]
 serde_json = "*"
+crossbeam = "0.7"
