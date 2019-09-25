@@ -130,11 +130,20 @@ impl Page {
             for (j, split) in splits.iter().enumerate() {
                 let mut snippet = Snippet::new(file_group[j].0.clone());
 
-                for section in split {
+                for (i, section) in split.iter().enumerate() {
+                    if i == split.len() - 1 {
+                        break
+                    }
+
                     snippet.add_lang(section);
 
                     if j == 0 {
-                        self.names.push(snippet.dirs.last().unwrap().content.split(" ").collect::<Vec<&str>>()[0].to_owned())
+                        let mut name = snippet.dirs.last().unwrap().content.split(" ").collect::<Vec<&str>>()[0].trim().to_string();
+                        name.retain(|x| !['*', '{', '}'].contains(&x));
+
+                        println!("{}", name);
+
+                        self.names.push(name)
                     }
                 }
 
