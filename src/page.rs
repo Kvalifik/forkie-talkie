@@ -13,9 +13,9 @@ pub enum Tag {
 impl fmt::Display for Tag {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match self {
-            &Tag::Button => write!(f, "v_btn"),
-            &Tag::Header(a) => write!(f, "h{}", a),
-            _ => write!(f, "p"),
+            &Tag::Button => write!(f, "button"),
+            &Tag::Header(a) => write!(f, "title_h{}", a),
+            _ => write!(f, "text_p"),
         }
     }
 }
@@ -26,12 +26,38 @@ pub struct Lang {
     pub tag: Tag,
 }
 
+impl Lang {
+    pub fn to_html(&self) -> String {
+        let mut new_content = self.content.clone();
+
+        while new_content.find("**").is_some() {
+            new_content = new_content.replacen("**", "<b>", 1);
+            new_content = new_content.replacen("**", "</b>", 1);
+        }
+
+        while new_content.find("*").is_some() {
+            new_content = new_content.replacen("*", "<i>", 1);
+            new_content = new_content.replacen("*", "</i>", 1);
+        }
+
+        new_content
+    }
+
+    pub fn to_trim(&self) -> String {
+        let mut result = self.content.clone();
+
+        result.retain(|x| !['*', '#'].contains(&x));
+        result = result.replace('+', "\\+");
+
+        result
+    }
+}
+
 impl fmt::Display for Lang {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "{}", self.content)
     }
 }
-
 
 #[derive(Debug)]
 pub struct Snippet {
@@ -67,8 +93,8 @@ impl Snippet {
                         index += 1
                     }
 
-                    break
-                },
+                    break;
+                }
 
                 '#' => {
                     let mut header_size = 1;
@@ -80,29 +106,19 @@ impl Snippet {
                     }
 
                     tag = Tag::Header(header_size);
-                },
-
-                _ => {
-                    content.push(c)
                 }
+
+                _ => content.push(c),
             }
 
             index += 1
         }
 
-        self.dirs.push(
-            Lang {
-                content,
-                tag,
-            }
-        )
+        self.dirs.push(Lang { content, tag })
     }
 }
 
-
-
 pub type LangFile = (String, String);
-
 
 pub struct Page {
     pub content: Vec<Snippet>,
@@ -111,11 +127,11 @@ pub struct Page {
 }
 
 impl Page {
-    pub fn new() -> Self {
+    pub fn new(path: String) -> Self {
         Self {
             content: Vec::new(),
             names: Vec::new(),
-            path: String::new(),
+            path,
         }
     }
 
@@ -132,16 +148,27 @@ impl Page {
 
                 for (i, section) in split.iter().enumerate() {
                     if i == split.len() - 1 {
-                        break
+                        break;
                     }
 
                     snippet.add_lang(section);
 
                     if j == 0 {
-                        let mut name = snippet.dirs.last().unwrap().content.split(" ").collect::<Vec<&str>>()[0].trim().to_string();
-                        name.retain(|x| !['*', '{', '}'].contains(&x));
+                        let mut name = snippet
+                            .dirs
+                            .last()
+                            .unwrap()
+                            .content
+                            .split(" ")
+                            .collect::<Vec<&str>>()[0]
+                            .trim()
+                            .replace('å', "aa")
+                            .replace("ø", "oe")
+                            .replace("æ", "ae")
+                            .to_string();
 
-                        println!("{}", name);
+                        name.retain(|x| !['*', '{', '}'].contains(&x));
+                        name.retain(|x| x.is_alphanumeric());
 
                         self.names.push(name)
                     }
@@ -152,20 +179,34 @@ impl Page {
         }
     }
 
-    pub fn as_i18_yaml(&self) -> String {
-        let mut result = String::new();
+    pub fn as_i18_yaml(&self) -> Vec<String> {
+        let mut actual_result = Vec::new();
 
-        for snippet in self.content.iter() {
-            result.push_str(&format!("<i18n locale=\"{}\" lang=\"yaml\">\n", snippet.code));
+        for j in 0 .. self.content.len() {
+            let mut result = format!("{}:\n", self.path);
+
+            let snippet = &self.content[j];
 
             for (i, lang) in snippet.dirs.iter().enumerate() {
-                result.push_str(&format!("\t__{}_{}__{}: \"{}\"", self.names[i].trim(), i, lang.tag, lang.content.trim()));
+
+                if lang.content.contains('{') {
+                    continue;
+                }
+                
+                result.push_str(&format!(
+                    "\t__{}_{}__{}: \"{}\"",
+                    self.names[j].trim(),
+                    i,
+                    lang.tag,
+                    lang.to_html().trim()
+                ));
+
                 result.push('\n')
             }
 
-            result.push_str("</i18n>\n\n");
+            actual_result.push(result)
         }
 
-        result
+        actual_result
     }
 }

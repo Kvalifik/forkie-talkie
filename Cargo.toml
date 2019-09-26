@@ -9,3 +9,4 @@ edition = "2018"
 [dependencies]
 serde_json = "*"
 crossbeam = "0.7"
+onig = "4.2.0"
